@@ -16,13 +16,20 @@ int relay5 = 5;
 int switchState = 0; // state of magnet switch
 int lastSwitchState = 0; // last state of magnet switch
 int distancePedalled = 0; // how far the cyclist has pedalled
-int distancePerWord = 10; // how many revolutions are required for a word to light up (relay)
 int timeStopped; // milliseconds passed since the wheel (magnet) has made a full revolution
+
+// change these ones
+int distancePerWord = 10; // how many revolutions are required for a word to light up (relay)
 int timeToStop = 4000; // milliseconds of inactivity required to switch everything off
 
 void setup(){
   Serial.begin(9600);
   pinMode(magnet, INPUT);
+  pinMode(relay1, OUTPUT);
+  pinMode(relay2, OUTPUT);
+  pinMode(relay3, OUTPUT);
+  pinMode(relay4, OUTPUT);
+  pinMode(relay5, OUTPUT);
 }
   
 void loop(){
