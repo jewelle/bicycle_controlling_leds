@@ -1,13 +1,24 @@
 /*
  * Jan 2019
  * ERICA JEWELL
- * - Magnet switch used to detect whether the bicycle is being pedalled.
- * - Five relays are successively switched on after a certain "distance" pedalled.
- * - When magnet switch has not been turned on after a certain time, turn off relays.
+ * - Magnet switch used to detect whether a stationary bicycle is being pedalled.
+ * - Eight relays are successively switched on after a certain "distance" pedalled in normal mode,
+ *   randomly switched on in random mode. Once all eight words have been illuminated, the
+ *   full sentence flashes on and off until the cyclist stops pedalling.
+ * - When bicycle hasn't been pedalled (magnet switch state has not changed) after a certain time,
+ *   all relays are turned off and "distance" pedalled is reset.
  */
 
-int magnet = 3; // connect S (signal) of magnetic switch to digital pin 0
-int relay1 = 4; // relays to pins 1 - 5
+
+// change these ones
+int distancePerWord = 10; // how many revolutions are required for a word to light up
+int timeToStop = 1000; // milliseconds of inactivity required to switch everything off
+int flashTime = 500; // milliseconds off during flash mode
+int screensaverTime = 1000; // milliseconds spent on each word during screensaver mode
+
+// pins
+int magnet = 3; // connect S (signal) of magnetic switch to digital pin 3
+int relay1 = 4; // relays to pins 4 - 11
 int relay2 = 5;
 int relay3 = 6;
 int relay4 = 7;
@@ -15,34 +26,32 @@ int relay5 = 8;
 int relay6 = 9;
 int relay7 = 10;
 int relay8 = 11;
-
-int randomSet1[8] = {6, 8, 5, 10, 7, 11, 4, 9};
+int random1, random2, random3, random4, random5, random6, random7, random8;
+int randomSet1[8] = {6, 8, 5, 10, 7, 11, 4, 9}; // setting order of pins (4-11) as relays 1-8 for random sequences
 int randomSet2[8] = {9, 4, 11, 7, 5, 6, 10, 8};
 int randomSet3[8] = {5, 7, 10, 8, 9, 4, 11, 6};
 
+// etc
+int switchState = 0; // state of magnet switch
+int lastSwitchState = 0; // last state of magnet switch
+int distancePedalled = 0; // how far the cyclist has pedalled
+unsigned long timeStopped = 0; // milliseconds passed since the wheel (magnet) has made a full revolution
+unsigned long timeFlashed = 0;
+unsigned long screensaverStartTime = 0;
 bool stopped = false;
+bool secondStopped = false;
+bool thirdStopped = false;
+bool fourthStopped = false;
 bool flashing = false;
 bool randomWords = false;
 bool set1 = true;
 bool set2 = false;
 bool set3 = false;
 
-int random1, random2, random3, random4, random5, random6, random7, random8;
-
-int switchState = 0; // state of magnet switch
-int lastSwitchState = 0; // last state of magnet switch
-int distancePedalled = 0; // how far the cyclist has pedalled
-unsigned long timeStopped = 0; // milliseconds passed since the wheel (magnet) has made a full revolution
-unsigned long timeFlashed = 0;
-// change these ones
-int distancePerWord = 10; // how many revolutions are required for a word to light up (relay)
-int timeToStop = 1000; // milliseconds of inactivity required to switch everything off
-
 void setup(){
-  Serial.begin(9600);
   pinMode(magnet, INPUT);
   pinMode(relay1, OUTPUT);
-  digitalWrite(relay1, HIGH);
+  digitalWrite(relay1, HIGH); // high = off for these relays
   pinMode(relay2, OUTPUT);
   digitalWrite(relay2, HIGH);
   pinMode(relay3, OUTPUT);
@@ -68,21 +77,32 @@ void setup(){
 }
   
 void loop(){
-  /*Serial.println(random1);
-  Serial.println(random2);
-  Serial.println(random3);
-  Serial.println(random4); 
-  Serial.println(random5);
-  Serial.println(random6);
-  Serial.println(random7);
-  Serial.println(random8);*/
   checkSwitch();
   if (switchState == 1 && lastSwitchState == 0){
     stopped = false;
+    secondStopped = false;
+    thirdStopped = false;
+    fourthStopped = false;
     distancePedalled++; // magnet has made one revolution
   }
-  
-//--NORMAL MODE--
+  lightUp();
+  checkStopped();
+  lastSwitchState = switchState;
+}
+
+//--CHECK SWITCH--
+void checkSwitch(){  // detect whether bicycle is being pedalled
+  if (digitalRead(magnet) == HIGH){
+    switchState = 0;
+  }
+  if (digitalRead(magnet) == LOW){
+    switchState = 1;
+  }
+}
+
+//--TRIGGER RELAYS--
+void lightUp(){
+  //--NORMAL MODE--
   if (randomWords == false){
     if (distancePedalled > 2 && distancePedalled < distancePerWord*2){
        digitalWrite(relay1, LOW);  
@@ -138,8 +158,8 @@ void loop(){
     }
   }
 
-//--RANDOM MODE--
-if (randomWords == true){
+  //--RANDOM MODE--
+  if (randomWords == true){
     if (distancePedalled > 2 && distancePedalled < distancePerWord*2){
        digitalWrite(random1, LOW);  
     }
@@ -192,19 +212,9 @@ if (randomWords == true){
       digitalWrite(random7, HIGH); 
       digitalWrite(random8, LOW);  
     }
-}
+  }
     
-//--FLASHING--   
-  /*if (distancePedalled > distancePerWord*9 && distancePedalled < distancePerWord*10){
-      digitalWrite(relay1, LOW);  
-      digitalWrite(relay2, LOW);  
-      digitalWrite(relay3, LOW);
-      digitalWrite(relay4, LOW); 
-      digitalWrite(relay5, LOW);  
-      digitalWrite(relay6, LOW); 
-      digitalWrite(relay7, LOW); 
-      digitalWrite(relay8, LOW);  
-  } */
+  //--FLASHING--   
   if (distancePedalled > distancePerWord*9 && flashing == false){
     timeFlashed = millis();
     flashing = true;
@@ -220,7 +230,7 @@ if (randomWords == true){
       digitalWrite(relay7, LOW); 
       digitalWrite(relay8, LOW);  
     }
-    else if ((millis() - timeFlashed) < 2500){
+    else if ((millis() - timeFlashed) > 2000 && (millis() - timeFlashed) < (2000+flashTime)){
       digitalWrite(relay1, HIGH);  
       digitalWrite(relay2, HIGH);  
       digitalWrite(relay3, HIGH);
@@ -230,17 +240,23 @@ if (randomWords == true){
       digitalWrite(relay7, HIGH); 
       digitalWrite(relay8, HIGH);  
     }
-    else if ((millis() - timeFlashed) > 2500){  
+    else if ((millis() - timeFlashed) > (2000+flashTime)){  
       flashing = false;   
     }
   }
+}
 
-//--STOPPED--
+//--CHECK IF STOPPED--
+void checkStopped(){
+  // starts the stop count
   if (switchState == 0 && lastSwitchState == 0 && stopped == false || switchState == 1 && lastSwitchState == 1 && stopped == false){
      timeStopped = millis();
      stopped = true;
+     secondStopped = true;
   }
-  if (stopped == true && (millis() - timeStopped) > timeToStop){
+  // checks whether it's been stopped long enough to turn everything off
+  if (secondStopped == true && (millis() - timeStopped) > timeToStop){
+     // once everything is turned off, move onto screensaver mode until the bike is pedalled
      distancePedalled = 0;
      digitalWrite(relay1, HIGH);
      digitalWrite(relay2, HIGH);
@@ -250,26 +266,55 @@ if (randomWords == true){
      digitalWrite(relay6, HIGH);
      digitalWrite(relay7, HIGH);
      digitalWrite(relay8, HIGH);  
-     stopped = false;
-     flashing = false;
-     goRandomWords();
+     secondStopped = false; // stopped is only reset once pedalled, but secondstopped is reset here. this keeps either from looping in between rides
+     thirdStopped = true;
+     flashing = false; 
+     getRandomWords();
   }
-  lastSwitchState = switchState;
-}
-
-//--CHECK SWITCH--
-void checkSwitch(){  // detect whether bicycle is being pedalled
-  if (digitalRead(magnet) == HIGH){
-    switchState = 0;
+  // "screensaver" mode
+  if (thirdStopped == true && fourthStopped == false){
+    screensaverStartTime = millis();
+    fourthStopped = true;
   }
-  if (digitalRead(magnet) == LOW){
-    switchState = 1;
+  if (fourthStopped == true){
+    if ((millis() - screensaverStartTime) < screensaverTime){
+      digitalWrite(random8, HIGH);
+      digitalWrite(random1, LOW);
+    }
+    if ((millis() - screensaverStartTime) > screensaverTime && (millis() - screensaverStartTime) < screensaverTime*2){
+      digitalWrite(random1, HIGH);
+      digitalWrite(random2, LOW);
+    }
+    if ((millis() - screensaverStartTime) > screensaverTime*2 && (millis() - screensaverStartTime) < screensaverTime*3){
+      digitalWrite(random2, HIGH);
+      digitalWrite(random3, LOW);
+    }
+    if ((millis() - screensaverStartTime) > screensaverTime*3 && (millis() - screensaverStartTime) < screensaverTime*4){
+      digitalWrite(random3, HIGH);
+      digitalWrite(random4, LOW);
+    }
+    if ((millis() - screensaverStartTime) > screensaverTime*4 && (millis() - screensaverStartTime) < screensaverTime*5){
+      digitalWrite(random4, HIGH);
+      digitalWrite(random5, LOW);
+    }
+    if ((millis() - screensaverStartTime) > screensaverTime*5 && (millis() - screensaverStartTime) < screensaverTime*6){
+      digitalWrite(random5, HIGH);
+      digitalWrite(random6, LOW);
+    }
+    if ((millis() - screensaverStartTime) > screensaverTime*6 && (millis() - screensaverStartTime) < screensaverTime*7){
+      digitalWrite(random6, HIGH);
+      digitalWrite(random7, LOW);
+    }
+    if ((millis() - screensaverStartTime) > screensaverTime*7 && (millis() - screensaverStartTime) < screensaverTime*8){
+      digitalWrite(random7, HIGH);
+      digitalWrite(random8, LOW);
+      fourthStopped = false;
+    }
   }
 }
 
 //--CHANGE RANDOMNESS--
-void goRandomWords(){
-  Serial.println("random loop");
+void getRandomWords(){
   randomWords = !randomWords;
   if (set1 == true){
     random1 = randomSet2[0];
