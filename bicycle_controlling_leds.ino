@@ -6,15 +6,18 @@
  *   randomly switched on in random mode. Once all eight words have been illuminated, the
  *   full sentence flashes on and off until the cyclist stops pedalling.
  * - When bicycle hasn't been pedalled (magnet switch state has not changed) after a certain time,
- *   all relays are turned off and "distance" pedalled is reset.
+ *   all relays are turned off and "distance" pedalled is reset. After a certain amount of time, 
+ *   "screensaver" mode kicks in and words flash randomly with black in between.
  */
 
 
 // change these ones
 int distancePerWord = 10; // how many revolutions are required for a word to light up
-int timeToStop = 1000; // milliseconds of inactivity required to switch everything off
-int flashTime = 500; // milliseconds off during flash mode
-int screensaverTime = 1000; // milliseconds spent on each word during screensaver mode
+unsigned long timeToStop = 1000; // milliseconds of inactivity required to switch everything off
+unsigned long flashTime = 200; // milliseconds off during flash mode
+unsigned long startScreenSaver = 300000; // milliseconds until screensaver starts from "stopped" mode
+unsigned long screensaverTime = 5000; // milliseconds spent on each word during screensaver mode
+unsigned long blackTime = 20000; // milliseconds between each word during screensaver mode
 
 // pins
 int magnet = 3; // connect S (signal) of magnetic switch to digital pin 3
@@ -38,6 +41,7 @@ int distancePedalled = 0; // how far the cyclist has pedalled
 unsigned long timeStopped = 0; // milliseconds passed since the wheel (magnet) has made a full revolution
 unsigned long timeFlashed = 0;
 unsigned long screensaverStartTime = 0;
+unsigned long waitStoppedTime = 0;
 bool stopped = false;
 bool secondStopped = false;
 bool thirdStopped = false;
@@ -49,6 +53,7 @@ bool set2 = false;
 bool set3 = false;
 
 void setup(){
+  Serial.begin(9600);
   pinMode(magnet, INPUT);
   pinMode(relay1, OUTPUT);
   digitalWrite(relay1, HIGH); // high = off for these relays
@@ -104,40 +109,67 @@ void checkSwitch(){  // detect whether bicycle is being pedalled
 void lightUp(){
   //--NORMAL MODE--
   if (randomWords == false){
-    if (distancePedalled > 2 && distancePedalled < distancePerWord*2){
+    if (distancePedalled > 2 && distancePedalled < (distancePerWord*2)){
        digitalWrite(relay1, LOW);  
+       digitalWrite(relay2, HIGH);
+       digitalWrite(relay3, HIGH);
+       digitalWrite(relay4, HIGH);
+       digitalWrite(relay5, HIGH);  
+       digitalWrite(relay6, HIGH); 
+       digitalWrite(relay7, HIGH); 
+       digitalWrite(relay8, HIGH);
     }
-    if (distancePedalled > distancePerWord*2 && distancePedalled < distancePerWord*3){
+    if (distancePedalled > (distancePerWord*2) && distancePedalled < (distancePerWord*3)){
       digitalWrite(relay1, HIGH);  
-      digitalWrite(relay2, LOW);  
+      digitalWrite(relay2, LOW); 
+      digitalWrite(relay3, HIGH);
+      digitalWrite(relay4, HIGH);
+      digitalWrite(relay5, HIGH);  
+      digitalWrite(relay6, HIGH); 
+      digitalWrite(relay7, HIGH); 
+      digitalWrite(relay8, HIGH); 
     }
-    if (distancePedalled > distancePerWord*3 && distancePedalled < distancePerWord*4){
+    if (distancePedalled > (distancePerWord*3) && distancePedalled < (distancePerWord*4)){
       digitalWrite(relay1, HIGH);  
       digitalWrite(relay2, HIGH);  
-      digitalWrite(relay3, LOW);  
+      digitalWrite(relay3, LOW); 
+      digitalWrite(relay4, HIGH);
+      digitalWrite(relay5, HIGH);  
+      digitalWrite(relay6, HIGH); 
+      digitalWrite(relay7, HIGH); 
+      digitalWrite(relay8, HIGH);  
     }
-    if (distancePedalled > distancePerWord*4 && distancePedalled < distancePerWord*5){
+    if (distancePedalled > (distancePerWord*4) && distancePedalled < (distancePerWord*5)){
       digitalWrite(relay1, HIGH);  
       digitalWrite(relay2, HIGH);  
       digitalWrite(relay3, HIGH);
       digitalWrite(relay4, LOW);  
+      digitalWrite(relay5, HIGH);  
+      digitalWrite(relay6, HIGH); 
+      digitalWrite(relay7, HIGH); 
+      digitalWrite(relay8, HIGH); 
     }
-    if (distancePedalled > distancePerWord*5 && distancePedalled < distancePerWord*6){
+    if (distancePedalled > (distancePerWord*5) && distancePedalled < (distancePerWord*6)){
       digitalWrite(relay1, HIGH);  
       digitalWrite(relay2, HIGH);  
       digitalWrite(relay3, HIGH);
       digitalWrite(relay4, HIGH); 
-      digitalWrite(relay5, LOW);  
+      digitalWrite(relay5, LOW); 
+      digitalWrite(relay6, HIGH); 
+      digitalWrite(relay7, HIGH); 
+      digitalWrite(relay8, HIGH); 
     }
-    if (distancePedalled > distancePerWord*6 && distancePedalled < distancePerWord*7){
+    if (distancePedalled > (distancePerWord*6) && distancePedalled < (distancePerWord*7)){
       digitalWrite(relay1, HIGH);  
       digitalWrite(relay2, HIGH);  
       digitalWrite(relay3, HIGH);
       digitalWrite(relay4, HIGH); 
       digitalWrite(relay5, HIGH);  
       digitalWrite(relay6, LOW);  
+      digitalWrite(relay7, HIGH); 
+      digitalWrite(relay8, HIGH); 
     }
-    if (distancePedalled > distancePerWord*7 && distancePedalled < distancePerWord*8){
+    if (distancePedalled > (distancePerWord*7) && distancePedalled < (distancePerWord*8)){
       digitalWrite(relay1, HIGH);  
       digitalWrite(relay2, HIGH);  
       digitalWrite(relay3, HIGH);
@@ -145,8 +177,9 @@ void lightUp(){
       digitalWrite(relay5, HIGH);  
       digitalWrite(relay6, HIGH); 
       digitalWrite(relay7, LOW);  
+      digitalWrite(relay8, HIGH); 
     }
-    if (distancePedalled > distancePerWord*8 && distancePedalled < distancePerWord*9){
+    if (distancePedalled > (distancePerWord*8) && distancePedalled < (distancePerWord*9)){
       digitalWrite(relay1, HIGH);  
       digitalWrite(relay2, HIGH);  
       digitalWrite(relay3, HIGH);
@@ -160,40 +193,67 @@ void lightUp(){
 
   //--RANDOM MODE--
   if (randomWords == true){
-    if (distancePedalled > 2 && distancePedalled < distancePerWord*2){
+    if (distancePedalled > 2 && distancePedalled < (distancePerWord*2)){
        digitalWrite(random1, LOW);  
+       digitalWrite(random2, HIGH);  
+       digitalWrite(random3, HIGH);
+       digitalWrite(random4, HIGH); 
+       digitalWrite(random5, HIGH);  
+       digitalWrite(random6, HIGH); 
+       digitalWrite(random7, HIGH); 
+       digitalWrite(random8, HIGH); 
     }
-    if (distancePedalled > distancePerWord*2 && distancePedalled < distancePerWord*3){
+    if (distancePedalled > (distancePerWord*2) && distancePedalled < (distancePerWord*3)){
       digitalWrite(random1, HIGH);  
       digitalWrite(random2, LOW);  
+      digitalWrite(random3, HIGH);
+      digitalWrite(random4, HIGH); 
+      digitalWrite(random5, HIGH);  
+      digitalWrite(random6, HIGH); 
+      digitalWrite(random7, HIGH); 
+      digitalWrite(random8, HIGH); 
     }
-    if (distancePedalled > distancePerWord*3 && distancePedalled < distancePerWord*4){
+    if (distancePedalled > (distancePerWord*3) && distancePedalled < (distancePerWord*4)){
       digitalWrite(random1, HIGH);  
       digitalWrite(random2, HIGH);  
       digitalWrite(random3, LOW);  
+      digitalWrite(random4, HIGH); 
+      digitalWrite(random5, HIGH);  
+      digitalWrite(random6, HIGH); 
+      digitalWrite(random7, HIGH); 
+      digitalWrite(random8, HIGH); 
     }
-    if (distancePedalled > distancePerWord*4 && distancePedalled < distancePerWord*5){
+    if (distancePedalled > (distancePerWord*4) && distancePedalled < (distancePerWord*5)){
       digitalWrite(random1, HIGH);  
       digitalWrite(random2, HIGH);  
       digitalWrite(random3, HIGH);
       digitalWrite(random4, LOW);  
+      digitalWrite(random5, HIGH);  
+      digitalWrite(random6, HIGH); 
+      digitalWrite(random7, HIGH); 
+      digitalWrite(random8, HIGH); 
     }
-    if (distancePedalled > distancePerWord*5 && distancePedalled < distancePerWord*6){
+    if (distancePedalled > (distancePerWord*5) && distancePedalled < (distancePerWord*6)){
       digitalWrite(random1, HIGH);  
       digitalWrite(random2, HIGH);  
       digitalWrite(random3, HIGH);
       digitalWrite(random4, HIGH); 
       digitalWrite(random5, LOW);  
+      digitalWrite(random6, HIGH); 
+      digitalWrite(random7, HIGH); 
+      digitalWrite(random8, HIGH); 
     }
-    if (distancePedalled > distancePerWord*6 && distancePedalled < distancePerWord*7){
+    if (distancePedalled > (distancePerWord*6) && distancePedalled < (distancePerWord*7)){
       digitalWrite(random1, HIGH);  
       digitalWrite(random2, HIGH);  
       digitalWrite(random3, HIGH);
       digitalWrite(random4, HIGH); 
       digitalWrite(random5, HIGH);  
       digitalWrite(random6, LOW);  
+      digitalWrite(random7, HIGH); 
+      digitalWrite(random8, HIGH); 
     }
-    if (distancePedalled > distancePerWord*7 && distancePedalled < distancePerWord*8){
+    if (distancePedalled > (distancePerWord*7) && distancePedalled < (distancePerWord*8)){
       digitalWrite(random1, HIGH);  
       digitalWrite(random2, HIGH);  
       digitalWrite(random3, HIGH);
@@ -201,8 +261,9 @@ void lightUp(){
       digitalWrite(random5, HIGH);  
       digitalWrite(random6, HIGH); 
       digitalWrite(random7, LOW);  
+      digitalWrite(random8, HIGH); 
     }
-    if (distancePedalled > distancePerWord*8 && distancePedalled < distancePerWord*9){
+    if (distancePedalled > (distancePerWord*8) && distancePedalled < (distancePerWord*9)){
       digitalWrite(random1, HIGH);  
       digitalWrite(random2, HIGH);  
       digitalWrite(random3, HIGH);
@@ -215,11 +276,11 @@ void lightUp(){
   }
     
   //--FLASHING--   
-  if (distancePedalled > distancePerWord*9 && flashing == false){
+  if (distancePedalled > (distancePerWord*9) && flashing == false){
     timeFlashed = millis();
     flashing = true;
   }
-  if (distancePedalled > distancePerWord*9 && flashing == true){
+  if (distancePedalled > (distancePerWord*9) && flashing == true){
     if ((millis() - timeFlashed) < 2000){
       digitalWrite(relay1, LOW);  
       digitalWrite(relay2, LOW);  
@@ -270,44 +331,63 @@ void checkStopped(){
      thirdStopped = true;
      flashing = false; 
      getRandomWords();
+     waitStoppedTime = millis();
   }
   // "screensaver" mode
-  if (thirdStopped == true && fourthStopped == false){
+  if (thirdStopped == true && fourthStopped == false && (millis() - waitStoppedTime) >= startScreenSaver){ // add something else so it can loop from fourthstopped
     screensaverStartTime = millis();
     fourthStopped = true;
   }
   if (fourthStopped == true){
-    if ((millis() - screensaverStartTime) < screensaverTime){
-      digitalWrite(random8, HIGH);
+    if ((millis() - screensaverStartTime) <= screensaverTime){
       digitalWrite(random1, LOW);
     }
-    if ((millis() - screensaverStartTime) > screensaverTime && (millis() - screensaverStartTime) < screensaverTime*2){
+    if ((millis() - screensaverStartTime) >= screensaverTime && (millis() - screensaverStartTime) <= (screensaverTime+blackTime)){
       digitalWrite(random1, HIGH);
+    }
+    if ((millis() - screensaverStartTime) >= (screensaverTime+blackTime) && (millis() - screensaverStartTime) <= (screensaverTime*2)+blackTime){
       digitalWrite(random2, LOW);
     }
-    if ((millis() - screensaverStartTime) > screensaverTime*2 && (millis() - screensaverStartTime) < screensaverTime*3){
+    if ((millis() - screensaverStartTime) >= (screensaverTime*2)+blackTime && (millis() - screensaverStartTime) <= (screensaverTime*2)+(blackTime*2)){
       digitalWrite(random2, HIGH);
+    }
+    if ((millis() - screensaverStartTime) >= (screensaverTime*2)+(blackTime*2) && (millis() - screensaverStartTime) <= (screensaverTime*3)+(blackTime*2)){
       digitalWrite(random3, LOW);
     }
-    if ((millis() - screensaverStartTime) > screensaverTime*3 && (millis() - screensaverStartTime) < screensaverTime*4){
+    if ((millis() - screensaverStartTime) >= (screensaverTime*3)+(blackTime*2) && (millis() - screensaverStartTime) <= (screensaverTime*3)+(blackTime*3)){
       digitalWrite(random3, HIGH);
+    }
+    if ((millis() - screensaverStartTime) >= (screensaverTime*3)+(blackTime*3) && (millis() - screensaverStartTime) <= (screensaverTime*4)+(blackTime*3)){
       digitalWrite(random4, LOW);
     }
-    if ((millis() - screensaverStartTime) > screensaverTime*4 && (millis() - screensaverStartTime) < screensaverTime*5){
+    if ((millis() - screensaverStartTime) >= (screensaverTime*4)+(blackTime*3) && (millis() - screensaverStartTime) <= (screensaverTime*4)+(blackTime*4)){
       digitalWrite(random4, HIGH);
+    }
+    if ((millis() - screensaverStartTime) >= (screensaverTime*4)+(blackTime*4) && (millis() - screensaverStartTime) <= (screensaverTime*5)+(blackTime*4)){ 
       digitalWrite(random5, LOW);
     }
-    if ((millis() - screensaverStartTime) > screensaverTime*5 && (millis() - screensaverStartTime) < screensaverTime*6){
+    if ((millis() - screensaverStartTime) >= (screensaverTime*5)+(blackTime*4) && (millis() - screensaverStartTime) <= (screensaverTime*5)+(blackTime*5)){
       digitalWrite(random5, HIGH);
+    }
+    if ((millis() - screensaverStartTime) >= (screensaverTime*5)+(blackTime*5) && (millis() - screensaverStartTime) <= (screensaverTime*6)+(blackTime*5)){  
       digitalWrite(random6, LOW);
     }
-    if ((millis() - screensaverStartTime) > screensaverTime*6 && (millis() - screensaverStartTime) < screensaverTime*7){
+    if ((millis() - screensaverStartTime) >= (screensaverTime*6)+(blackTime*5) && (millis() - screensaverStartTime) <= (screensaverTime*6)+(blackTime*6)){
       digitalWrite(random6, HIGH);
+    }
+    if ((millis() - screensaverStartTime) >= (screensaverTime*6)+(blackTime*6) && (millis() - screensaverStartTime) <= (screensaverTime*7)+(blackTime*6)){
       digitalWrite(random7, LOW);
     }
-    if ((millis() - screensaverStartTime) > screensaverTime*7 && (millis() - screensaverStartTime) < screensaverTime*8){
+    if ((millis() - screensaverStartTime) >= (screensaverTime*7)+(blackTime*6) && (millis() - screensaverStartTime) <= (screensaverTime*7)+(blackTime*7)){
       digitalWrite(random7, HIGH);
+    }
+    if ((millis() - screensaverStartTime) >= (screensaverTime*7)+(blackTime*7) && (millis() - screensaverStartTime) <= (screensaverTime*8)+(blackTime*7)){
       digitalWrite(random8, LOW);
+    }
+    if ((millis() - screensaverStartTime) >= (screensaverTime*8)+(blackTime*7)){
+      digitalWrite(random8, HIGH);
+      waitStoppedTime = millis();
+      getRandomWords();
       fourthStopped = false;
     }
   }
